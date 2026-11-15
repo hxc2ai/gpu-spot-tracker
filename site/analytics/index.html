@@ -1,0 +1,8 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spot GPU Analytics</title><link rel="stylesheet" href="/style.css"></head><body>
+<h1>Analytics (private)</h1>
+<p id="updated">Loading…</p>
+<p>Ranked by stability-adjusted price = spot price ÷ (1 − estimated interruption risk) × (1 + 7-day price volatility). Stability tier A/B/C is a heuristic; “?” means the provider publishes no interruption data. Not financial or SLA advice. Includes Vast.ai data.</p>
+<input id="q" placeholder="Filter provider / region"><select id="gpu"></select>
+<div class="wrap"><table><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table></div>
+<script>window.DATA_URL="/analytics/data.json";window.ANALYTICS=true</script><script src="/app.js"></script></body></html>
