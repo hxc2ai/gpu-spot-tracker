@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS offers(
   first_prun INT, last_prun INT, seen INT, last_ts INT);
 CREATE TABLE IF NOT EXISTS history(key TEXT, ts INT, price REAL);
 CREATE INDEX IF NOT EXISTS h_key ON history(key, ts);
+CREATE TABLE IF NOT EXISTS cpu_offers(provider TEXT, instance TEXT, region TEXT, vcpus REAL, mem_gb REAL, price REAL, per_vcpu REAL, ts INT);
 CREATE TABLE IF NOT EXISTS provider_state(provider TEXT PRIMARY KEY, n INT, last_ts INT, last_ok INT, last_error TEXT);
 """
 
@@ -52,4 +53,12 @@ def record_success(db, provider: str, offers: list[Offer], now: int):
         if last is None or abs(last[0] - o.price) > 1e-9:
             db.execute("INSERT INTO history VALUES(?,?,?)", (o.key, now, o.price))
     db.execute("DELETE FROM offers WHERE last_ts < ?", (now - 30 * 86400,))  # prune dead keys
+    db.commit()
+
+
+def replace_cpu(db, rows: list[dict], now: int):
+    """CPU-only spot instances: latest snapshot only (no history)."""
+    db.execute("DELETE FROM cpu_offers")
+    db.executemany("INSERT INTO cpu_offers VALUES(?,?,?,?,?,?,?,?)",
+                   [(r["provider"], r["instance"], r["region"], r["vcpus"], r["mem_gb"], r["price"], r["per_vcpu"], now) for r in rows])
     db.commit()

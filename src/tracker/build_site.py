@@ -57,7 +57,10 @@ def main():
     shutil.copytree("site", a.out, dirs_exist_ok=True)  # overwrite in place; CI starts from a clean checkout
     # Single data file. The whole site MUST sit behind Cloudflare Access (owner-only).
     json.dump({"meta": {"generated_at": now}, "rows": rows}, open(os.path.join(a.out, "data.json"), "w"))
-    print(f"{len(rows)} rows -> {a.out}")
+    cpu = [dict(zip(("provider", "instance", "region", "vcpus", "mem_gb", "price", "per_vcpu"), r))
+           for r in db.execute("SELECT provider,instance,region,vcpus,mem_gb,price,per_vcpu FROM cpu_offers ORDER BY per_vcpu")]
+    json.dump(cpu, open(os.path.join(a.out, "cpu.json"), "w"))
+    print(f"{len(rows)} rows, {len(cpu)} cpu instances -> {a.out}")
 
 
 if __name__ == "__main__":

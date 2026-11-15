@@ -118,3 +118,13 @@ fetch(window.DATA_URL).then((r) => r.json()).then((d) => {
   $("#reset").onclick = () => { sel = {}; rng = {}; $("#q").value = ""; buildHeader(); render(); };
   applyProfile();
 }).catch((e) => { $("#updated").textContent = "Failed to load data: " + e; });
+
+fetch("/cpu.json").then((r) => r.json()).then((cpu) => {
+  const draw = () => {
+    const m = num("#cpumin"), pv = $("#cpuprov").value.toLowerCase();
+    const r = cpu.filter((x) => x.vcpus >= m && (!pv || x.provider.includes(pv))).slice(0, 12);
+    $("#cputbl").innerHTML = "<tr>" + ["Provider", "Instance", "Region", "vCPUs", "RAM GB", "$/hr", "$/vCPU-hr"].map((h) => `<th>${h}</th>`).join("") + "</tr>" +
+      r.map((x) => `<tr><td>${x.provider}</td><td>${x.instance}</td><td>${x.region}</td><td>${x.vcpus}</td><td>${fmt(x.mem_gb, 0)}</td><td>${fmt(x.price)}</td><td>${fmt(x.per_vcpu, 4)}</td></tr>`).join("");
+  };
+  $("#cpumin").oninput = $("#cpuprov").oninput = draw; draw();
+}).catch(() => {});

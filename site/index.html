@@ -19,6 +19,13 @@
   <p class="hint">Picks respect the table filters below (e.g. select H100 and RTX PRO 6000 to compare only those). Cost = price ÷ speed ÷ (1 − interruption rate × hours lost). Speed is relative to one H100 on your 4B SFT run (7,300 tok/s); only H100/H200/RTX PRO 6000 are measured, others are scaled by TFLOPS.</p>
 </section>
 
+<section class="card" id="cpu">
+  <h2>CPU-only spot boxes <small>(gin_rummy_bot self-play is CPU-bound: more vCPUs per dollar, no GPU needed)</small></h2>
+  <div class="ctl"><label>Min vCPUs <input id="cpumin" type="number" value="16" min="1"></label>
+  <label>Provider <input id="cpuprov" placeholder="aws / gcp / azure"></label></div>
+  <div class="wrap"><table id="cputbl"></table></div>
+  <p class="hint">AWS/GCP/Azure x86 instances from the SkyPilot catalog, cheapest region per instance type, sorted by $ per vCPU-hour. Hetzner/OVH/etc. are not tracked yet.</p>
+</section>
 <div class="bar"><input id="q" placeholder="Search any text…"><button id="reset">Reset filters</button><span id="count"></span></div>
 <div class="wrap"><table id="main"><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
 <p class="hint">Tier: A = mean time between interruptions ≥ 200 h, B ≥ 20 h, C below, “?” = no data (uses the unknown rate above). AWS comes from the Spot Advisor monthly band, Lium from average spot uptime. GCP rows are GPU SKU prices and may exclude the host VM. Price is per GPU; rentals with more GPUs than you use are billed in full.</p>

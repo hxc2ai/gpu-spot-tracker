@@ -27,6 +27,8 @@ def main():
             try:
                 offers = mod.collect(client)
                 dbm.record_success(db, name, offers, now)
+                if getattr(mod, "LAST_CPU", None):
+                    dbm.replace_cpu(db, mod.LAST_CPU, now)
                 print(f"{name}: {len(offers)} offers")
             except Exception as e:  # keep old data; mark failure
                 traceback.print_exc()
