@@ -40,11 +40,13 @@ def run(db, client, now: int) -> int:
         if not mt:
             continue
         body = {"instanceProperties": {"machineType": mt, "scheduling": {"provisioningModel": "SPOT"}},
-                "locationPolicy": {"location": f"regions/{region}"}, "types": ["PREEMPTION_HISTORY"]}
+                "types": ["PREEMPTION", "PRICE"]}
         r = sess.post(URL.format(p=project, r=region), json=body, timeout=30)
         if r.status_code != 200:
             errors.append(f"{mt}/{region}: {r.status_code} {r.text[:120]}")
             continue
+        if n == 0 and not errors:
+            print("gcp sample response:", r.text[:700].replace("\n", " "))  # one-time schema check (public data)
         p = parse(r.json())
         if p:
             db.execute("INSERT OR REPLACE INTO gcp_preempt VALUES(?,?,?,?,?,?,?)", (gpu, int(cnt), region, mt, p[0], p[1], now))
