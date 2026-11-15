@@ -51,4 +51,5 @@ def record_success(db, provider: str, offers: list[Offer], now: int):
         last = db.execute("SELECT price FROM history WHERE key=? ORDER BY ts DESC LIMIT 1", (o.key,)).fetchone()
         if last is None or abs(last[0] - o.price) > 1e-9:
             db.execute("INSERT INTO history VALUES(?,?,?)", (o.key, now, o.price))
+    db.execute("DELETE FROM offers WHERE last_ts < ?", (now - 30 * 86400,))  # prune dead keys
     db.commit()

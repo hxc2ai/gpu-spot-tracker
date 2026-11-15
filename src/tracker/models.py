@@ -32,10 +32,10 @@ class Offer:
     region: str
     price: float                 # USD per GPU-hour, spot/interruptible
     gpu_count: int = 1
-    p_int: float | None = None   # estimated hourly interruption probability
+    p_int: float | None = None   # estimated interruptions per hour (None = unknown)
     reliability: float | None = None  # 0-1 host reliability if the source gives one
     note: str = ""               # e.g. "AWS band 5-10%"
 
     @property
     def key(self) -> str:
-        return f"{self.provider}|{self.gpu}|{self.region}"
+        return f"{self.provider}|{self.gpu}|{self.region}|x{self.gpu_count}"

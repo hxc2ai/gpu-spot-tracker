@@ -30,7 +30,7 @@ def collect(client) -> list[Offer]:
             continue
         # min_bid is the interruptible floor; hosts can be outbid at any time.
         region = (o.get("geolocation") or "?").split(",")[-1].strip() or "?"
-        off = Offer("vast", gpu, region, bid / n, n, p_int=None if rel is None else max(0.0, 1 - rel) / 10,
+        off = Offer("vast", gpu, region, bid / n, n, p_int=None,
                     reliability=rel, note="min_bid; interruptible")
         cur = out.get(off.key)
         if cur is None or off.price < cur.price:

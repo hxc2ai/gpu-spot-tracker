@@ -1,8 +1,25 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Spot GPU Tracker</title><link rel="stylesheet" href="/style.css"></head><body>
-<h1>Spot GPU tracker (private)</h1>
+<h1>Spot GPU tracker <small>(private)</small></h1>
 <p id="updated">Loading…</p>
-<p>Ranked by stability-adjusted price = spot price ÷ (1 − estimated interruption risk) × (1 + 7-day price volatility). Stability tier A/B/C is a heuristic; “?” means the provider publishes no interruption data. Not financial or SLA advice. Includes Vast.ai.</p>
-<input id="q" placeholder="Filter provider / region"><select id="gpu"></select>
-<div class="wrap"><table><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table></div>
-<script>window.DATA_URL="/data.json";window.ANALYTICS=true</script><script src="/app.js"></script></body></html>
+
+<section class="card" id="rec">
+  <h2>Which GPU should I rent?</h2>
+  <div class="ctl">
+    <label>Workload <select id="profile"></select></label>
+    <label>GPUs I'll use <input id="ngpu" type="number" min="1" value="1"></label>
+    <label>Job size (H100-hours) <input id="job" type="number" min="1" value="40"></label>
+    <label>Min VRAM (GB) <input id="minvram" type="number" min="0" value="80"></label>
+    <label><input id="needbf16" type="checkbox" checked> needs bf16</label>
+    <label>Hours lost per interruption <input id="lost" type="number" step="0.25" min="0" value="0.75"></label>
+    <label>Unknown interruptions / day <input id="unk" type="number" step="0.5" min="0" value="1"></label>
+  </div>
+  <p class="hint" id="profnote"></p>
+  <div class="wrap"><table id="picks"></table></div>
+  <p class="hint">Picks respect the table filters below (e.g. select H100 and RTX PRO 6000 to compare only those). Cost = price ÷ speed ÷ (1 − interruption rate × hours lost). Speed is relative to one H100 on your 4B SFT run (7,300 tok/s); only H100/H200/RTX PRO 6000 are measured, others are scaled by TFLOPS.</p>
+</section>
+
+<div class="bar"><input id="q" placeholder="Search any text…"><button id="reset">Reset filters</button><span id="count"></span></div>
+<div class="wrap"><table id="main"><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+<p class="hint">Tier: A = mean time between interruptions ≥ 200 h, B ≥ 20 h, C below, “?” = no data (uses the unknown rate above). AWS comes from the Spot Advisor monthly band, Lium from average spot uptime. GCP rows are GPU SKU prices and may exclude the host VM. Price is per GPU; rentals with more GPUs than you use are billed in full.</p>
+<script>window.DATA_URL="/data.json"</script><script src="/app.js"></script></body></html>
