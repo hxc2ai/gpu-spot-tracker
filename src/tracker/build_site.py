@@ -5,7 +5,6 @@ from . import db as dbm
 
 WINDOW = 7 * 86400
 DEFAULT_P = 0.10          # assumed hourly-ish interruption risk when a source publishes nothing
-PRIVATE_PROVIDERS = {"vast"}   # ToS-sensitive: only in the access-gated analytics data
 
 
 def vol(points, now):
@@ -58,12 +57,9 @@ def main():
     rows = build_rows(db, now)
     shutil.rmtree(a.out, ignore_errors=True)
     shutil.copytree("site", a.out)
-    pub = [{k: v for k, v in r.items() if k != "history"} for r in rows if r["provider"] not in PRIVATE_PROVIDERS]
-    meta = {"generated_at": now}
-    json.dump({"meta": meta, "rows": pub}, open(os.path.join(a.out, "public.json"), "w"))
-    os.makedirs(os.path.join(a.out, "analytics"), exist_ok=True)
-    json.dump({"meta": meta, "rows": rows}, open(os.path.join(a.out, "analytics", "data.json"), "w"))
-    print(f"{len(pub)} public rows, {len(rows)} analytics rows -> {a.out}")
+    # Single data file. The whole site MUST sit behind Cloudflare Access (owner-only).
+    json.dump({"meta": {"generated_at": now}, "rows": rows}, open(os.path.join(a.out, "data.json"), "w"))
+    print(f"{len(rows)} rows -> {a.out}")
 
 
 if __name__ == "__main__":
