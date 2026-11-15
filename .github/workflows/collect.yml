@@ -15,8 +15,8 @@ jobs:
       B2_BUCKET: ${{ secrets.B2_BUCKET }}
       VAST_API_KEY: ${{ secrets.VAST_API_KEY }}
       PRIME_API_KEY: ${{ secrets.PRIME_API_KEY }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_COMPUTE_TRACKER_ACCESS_KEY_ID: ${{ secrets.AWS_COMPUTE_TRACKER_ACCESS_KEY_ID }}
+      AWS_COMPUTE_TRACKER_SECRET_ACCESS_KEY: ${{ secrets.AWS_COMPUTE_TRACKER_SECRET_ACCESS_KEY }}
       ALLOW_VAST_STORE: "1"   # owner's decision; Vast ToS needs written permission. Set "0" to disable.
     steps:
       - uses: actions/checkout@v4

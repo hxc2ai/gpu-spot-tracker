@@ -40,9 +40,9 @@ def record_success(db, provider: str, offers: list[Offer], now: int):
                "ON CONFLICT(provider) DO UPDATE SET n=?, last_ts=?, last_ok=1, last_error=NULL",
                (provider, n, now, n, now))
     for o in offers:
-        old = db.execute("SELECT price FROM offers WHERE key=?", (o.key,)).fetchone()
-        if old is None:
-            db.execute("INSERT INTO offers VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        old = db.execute("SELECT price, source FROM offers WHERE key=?", (o.key,)).fetchone()
+        if old is None or old[1] != provider:   # new key, or another source took over: restart stock stats, keep history
+            db.execute("INSERT OR REPLACE INTO offers VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                        (o.key, provider, o.provider, o.gpu, o.region, o.gpu_count, o.price, o.p_int,
                         o.reliability, o.note, n, n, 1, now))
         else:

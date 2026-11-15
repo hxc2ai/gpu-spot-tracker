@@ -28,7 +28,7 @@ def collect(client) -> list[Offer]:
     out: dict[str, Offer] = {}
     LAST_CPU.clear()
     cpu_best: dict[tuple, dict] = {}
-    live_aws = bool(os.environ.get("AWS_ACCESS_KEY_ID"))   # aws_live collector replaces the catalog rows
+    live_aws = bool(os.environ.get("AWS_COMPUTE_TRACKER_ACCESS_KEY_ID"))   # aws_live collector replaces the catalog rows
     for cloud in ("aws", "gcp", "azure"):
         text = client.get(BASE.format(c=cloud), timeout=120).text
         for r in csv.DictReader(io.StringIO(text)):
