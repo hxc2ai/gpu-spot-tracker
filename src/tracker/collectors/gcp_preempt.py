@@ -21,10 +21,30 @@ def enabled() -> bool:
     return bool(os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") and os.environ.get("GCP_PROJECT_ID"))
 
 
+def _secs(iv: dict) -> float:
+    from datetime import datetime
+    f = lambda x: datetime.fromisoformat(x.replace("Z", "+00:00"))
+    try:
+        return max(1.0, (f(iv["endTime"]) - f(iv["startTime"])).total_seconds())
+    except (KeyError, ValueError):
+        return 86400.0
+
+
 def parse(resp: dict) -> tuple[float, float] | None:
-    """-> (mean rate over the window, mean of the last 7 intervals) or None."""
-    rates = [h["preemptionRate"] for h in resp.get("preemptionHistory", []) if "preemptionRate" in h]
-    return (mean(rates), mean(rates[-7:])) if rates else None
+    """-> (rate averaged over the window, rate over the last 7 days), both weighted by interval length
+    (intervals are 1 day up to over a week long). None if there is no data."""
+    hist = [(h["preemptionRate"], _secs(h.get("interval", {}))) for h in resp.get("preemptionHistory", []) if "preemptionRate" in h]
+    if not hist:
+        return None
+    def wavg(items):
+        tot = sum(w for _, w in items)
+        return sum(r * w for r, w in items) / tot
+    recent, acc = [], 0.0
+    for r, w in reversed(hist):
+        if acc >= 7 * 86400:
+            break
+        recent.append((r, w)); acc += w
+    return wavg(hist), wavg(recent)
 
 
 def run(db, client, now: int) -> int:
