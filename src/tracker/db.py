@@ -19,6 +19,10 @@ def connect(path: str) -> sqlite3.Connection:
     db = sqlite3.connect(path)
     db.execute("PRAGMA journal_mode=DELETE")  # single file, safe to upload
     db.executescript(SCHEMA)
+    try:
+        db.execute("ALTER TABLE gcp_preempt ADD COLUMN vm_price REAL")   # added later; no-op if present
+    except sqlite3.OperationalError:
+        pass
     return db
 
 

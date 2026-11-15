@@ -22,3 +22,9 @@ def test_gcp_parse():
     a, rc = parse(r)
     assert abs(a - 0.5 / 9) < 1e-9 and abs(rc - 0.5 / 9) < 1e-9   # 8-day zero interval dilutes the 1-day 0.5
     assert parse({}) is None
+
+
+def test_gcp_latest_price():
+    from tracker.collectors.gcp_preempt import latest_price
+    r = {"priceHistory": [{"listPrice": {"units": "1", "nanos": 500000000}}, {"listPrice": {"currencyCode": "USD", "units": "2", "nanos": 417470000}}]}
+    assert abs(latest_price(r) - 2.41747) < 1e-9 and latest_price({}) is None

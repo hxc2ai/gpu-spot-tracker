@@ -47,6 +47,18 @@ def parse(resp: dict) -> tuple[float, float] | None:
     return wavg(hist), wavg(recent)
 
 
+def latest_price(resp: dict) -> float | None:
+    """Most recent whole-VM Spot list price (USD/hour) from priceHistory."""
+    ph = resp.get("priceHistory", [])
+    if not ph:
+        return None
+    lp = ph[-1].get("listPrice", {})
+    try:
+        return int(lp.get("units", 0)) + lp.get("nanos", 0) / 1e9
+    except (TypeError, ValueError):
+        return None
+
+
 def run(db, client, now: int) -> int:
     import google.auth
     from google.auth.transport.requests import AuthorizedSession
@@ -65,11 +77,10 @@ def run(db, client, now: int) -> int:
         if r.status_code != 200:
             errors.append(f"{mt}/{region}: {r.status_code} {r.text[:120]}")
             continue
-        if n == 0 and not errors:
-            j = r.json(); ph = j.get("priceHistory", []); print("gcp price sample:", mt, region, len(ph), "points;", str(ph[:2]).replace("\n", " "), "...", str(ph[-1:]))  # one-time schema check (public data)
         p = parse(r.json())
         if p:
-            db.execute("INSERT OR REPLACE INTO gcp_preempt VALUES(?,?,?,?,?,?,?)", (gpu, int(cnt), region, mt, p[0], p[1], now))
+            db.execute("INSERT OR REPLACE INTO gcp_preempt(gpu,gpu_count,region,machine_type,avg_rate,recent_rate,ts,vm_price) VALUES(?,?,?,?,?,?,?,?)",
+                       (gpu, int(cnt), region, mt, p[0], p[1], now, latest_price(r.json())))
             n += 1
         time.sleep(0.2)
     db.commit()

@@ -76,7 +76,7 @@ function renderPicks(vis) {
   const top = [...best.values()].slice(0, 8);
   const stable = top.find((r) => r.tier === "A" || r.tier === "B");
   const head = "<tr>" + ["", "Provider", "GPU", "Region", "$/GPU-hr", "Speed ×H100", "Tier", "Est. hours", "Est. interruptions", "Est. job cost"].map((h) => `<th>${h}</th>`).join("") + "</tr>";
-  $("#picks").innerHTML = top.length ? head + top.map((r, i) => `<tr class="${r === top[0] ? "best" : ""}"><td>${r === top[0] ? "Cheapest" : r === stable ? "Cheapest stable" : i + 1}</td><td>${r.provider}${(r.note || '').startsWith('GCP') ? ' <span title="GCP GPU SKU price: may exclude the host VM cost">⚠</span>' : ''}</td><td>${r.gpu}${r.gpu_count > 1 ? ` ×${r.gpu_count}` : ""}</td><td>${r.region}</td><td>${fmt(r.price)}</td><td>${fmt(r.speed, 2)}${r.measured ? "" : "*"}</td><td>${tierSpan(r.tier, r.note)}</td><td>${fmt(r.wall, 1)}</td><td>${fmt(r.nint, 1)}</td><td><b>$${fmt(r.jobCost, 0)}</b></td></tr>`).join("")
+  $("#picks").innerHTML = top.length ? head + top.map((r, i) => `<tr class="${r === top[0] ? "best" : ""}"><td>${r === top[0] ? "Cheapest" : r === stable ? "Cheapest stable" : i + 1}</td><td>${r.provider}${(r.note || '').startsWith('GCP GPU SKU') ? ' <span title="GCP GPU SKU price: may exclude the host VM cost">⚠</span>' : ''}</td><td>${r.gpu}${r.gpu_count > 1 ? ` ×${r.gpu_count}` : ""}</td><td>${r.region}</td><td>${fmt(r.price)}</td><td>${fmt(r.speed, 2)}${r.measured ? "" : "*"}</td><td>${tierSpan(r.tier, r.note)}</td><td>${fmt(r.wall, 1)}</td><td>${fmt(r.nint, 1)}</td><td><b>$${fmt(r.jobCost, 0)}</b></td></tr>`).join("")
     : "<tr><td>No offers match these requirements and filters.</td></tr>";
 }
 function buildHeader() {
