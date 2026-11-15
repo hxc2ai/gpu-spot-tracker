@@ -10,9 +10,13 @@ from statistics import mean
 
 # (GPU name as stored, GPUs per VM) -> machine type
 MACHINES = {
-    ("H100", 8): "a3-highgpu-8g", ("H200", 8): "a3-ultragpu-8g", ("B200", 8): "a4-highgpu-8g",
-    ("A100 40GB", 1): "a2-highgpu-1g", ("A100 40GB", 8): "a2-highgpu-8g", ("A100 80GB", 1): "a2-ultragpu-1g",
-    ("A100 80GB", 8): "a2-ultragpu-8g", ("L4", 1): "g2-standard-4", ("RTX PRO 6000", 1): "g4-standard-48",
+    ("H100", 1): "a3-highgpu-1g", ("H100", 2): "a3-highgpu-2g", ("H100", 4): "a3-highgpu-4g", ("H100", 8): "a3-highgpu-8g",
+    ("H200", 8): "a3-ultragpu-8g", ("B200", 8): "a4-highgpu-8g",
+    ("A100 40GB", 1): "a2-highgpu-1g", ("A100 40GB", 2): "a2-highgpu-2g", ("A100 40GB", 4): "a2-highgpu-4g", ("A100 40GB", 8): "a2-highgpu-8g",
+    ("A100 80GB", 1): "a2-ultragpu-1g", ("A100 80GB", 2): "a2-ultragpu-2g", ("A100 80GB", 4): "a2-ultragpu-4g", ("A100 80GB", 8): "a2-ultragpu-8g",
+    ("L4", 1): "g2-standard-4", ("L4", 2): "g2-standard-24", ("L4", 4): "g2-standard-48", ("L4", 8): "g2-standard-96",
+    ("RTX PRO 6000", 1): "g4-standard-48", ("RTX PRO 6000", 2): "g4-standard-96",
+    ("RTX PRO 6000", 4): "g4-standard-192", ("RTX PRO 6000", 8): "g4-standard-384",
 }
 URL = "https://compute.googleapis.com/compute/beta/projects/{p}/regions/{r}/advice/capacityHistory"
 
