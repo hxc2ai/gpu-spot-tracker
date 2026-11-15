@@ -66,7 +66,7 @@ def run(db, client, now: int) -> int:
             errors.append(f"{mt}/{region}: {r.status_code} {r.text[:120]}")
             continue
         if n == 0 and not errors:
-            print("gcp sample response:", r.text[:700].replace("\n", " "))  # one-time schema check (public data)
+            j = r.json(); ph = j.get("priceHistory", []); print("gcp price sample:", mt, region, len(ph), "points;", str(ph[:2]).replace("\n", " "), "...", str(ph[-1:]))  # one-time schema check (public data)
         p = parse(r.json())
         if p:
             db.execute("INSERT OR REPLACE INTO gcp_preempt VALUES(?,?,?,?,?,?,?)", (gpu, int(cnt), region, mt, p[0], p[1], now))
