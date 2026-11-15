@@ -28,6 +28,7 @@ def build_rows(db, now):
     """One row per live offer with specs attached. Ranking/recommendation is done in the browser
     (site/app.js) so the owner can change the workload assumptions without a rebuild."""
     state = {r[0]: r[1] for r in db.execute("SELECT provider,n FROM provider_state")}
+    gcp = {(g, c, rg): (a, rc) for g, c, rg, a, rc in db.execute("SELECT gpu,gpu_count,region,avg_rate,recent_rate FROM gcp_preempt")}
     rows = []
     q = "SELECT key,source,provider,gpu,region,gpu_count,price,p_int,reliability,note,first_prun,last_prun,seen FROM offers"
     for (key, src, prov, gpu, reg, cnt, price, p_int, rel, note, first, last, seen) in db.execute(q):
@@ -36,6 +37,10 @@ def build_rows(db, now):
         hist = db.execute("SELECT ts,price FROM history WHERE key=? ORDER BY ts", (key,)).fetchall()
         cv = vol(hist, now)
         spec = spec_for(gpu) or {}
+        pre = gcp.get((gpu, cnt, reg)) if prov == "gcp" else None
+        if pre:
+            rel = 1 - pre[0]
+            note = f"{note} | GCP 30d preemption rate {pre[0]:.1%} (last 7d {pre[1]:.1%})"
         rows.append(dict(
             key=key, provider=prov, gpu=gpu, region=reg, gpu_count=cnt, price=round(price, 4),
             int_per_hr=p_int, reliability=rel, vol7d=None if cv is None else round(cv, 3),

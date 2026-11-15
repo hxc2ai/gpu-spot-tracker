@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS offers(
 CREATE TABLE IF NOT EXISTS history(key TEXT, ts INT, price REAL);
 CREATE INDEX IF NOT EXISTS h_key ON history(key, ts);
 CREATE TABLE IF NOT EXISTS cpu_offers(provider TEXT, instance TEXT, region TEXT, vcpus REAL, mem_gb REAL, price REAL, per_vcpu REAL, ts INT);
+CREATE TABLE IF NOT EXISTS gcp_preempt(gpu TEXT, gpu_count INT, region TEXT, machine_type TEXT, avg_rate REAL, recent_rate REAL, ts INT, PRIMARY KEY(gpu,gpu_count,region));
 CREATE TABLE IF NOT EXISTS provider_state(provider TEXT PRIMARY KEY, n INT, last_ts INT, last_ok INT, last_error TEXT);
 """
 

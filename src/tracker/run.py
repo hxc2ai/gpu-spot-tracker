@@ -25,6 +25,8 @@ def main():
             if not a.force and not dbm.due(db, name, every, now):
                 print(f"{name}: not due"); continue
             try:
+                if hasattr(mod, "run"):      # collectors that write their own tables
+                    n = mod.run(db, client, now); dbm.record_success(db, name, [], now); print(f"{name}: {n} rows"); continue
                 offers = mod.collect(client)
                 dbm.record_success(db, name, offers, now)
                 if getattr(mod, "LAST_CPU", None):
