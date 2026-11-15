@@ -23,8 +23,12 @@ def connect(path: str) -> sqlite3.Connection:
 
 
 def due(db, provider: str, every_min: int, now: int) -> bool:
-    r = db.execute("SELECT last_ts FROM provider_state WHERE provider=?", (provider,)).fetchone()
-    return r is None or now - r[0] >= (every_min - 2) * 60
+    """Poll if the cadence elapsed; after a FAILED poll retry sooner (~30 min) instead of waiting the full cadence."""
+    r = db.execute("SELECT last_ts, last_ok FROM provider_state WHERE provider=?", (provider,)).fetchone()
+    if r is None:
+        return True
+    wait = every_min - 2 if r[1] else min(every_min - 2, 28)
+    return now - r[0] >= wait * 60
 
 
 def record_failure(db, provider: str, err: str, now: int):
