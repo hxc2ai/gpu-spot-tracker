@@ -49,7 +49,7 @@ def build_rows(db, now):
             in_stock_pct=round(100 * seen / max(1, state[src] - first + 1)), note=note,
             vram_gb=spec.get("vram_gb"), tflops=spec.get("tflops"), bf16=spec.get("bf16"),
             speed=spec.get("speed"), tok_s=spec.get("tok_s"), measured=spec.get("measured"),
-            history=[[t, round(pr, 4)] for t, pr in hist[-60:]]))
+            history=[[t, round(pr, 4)] for t, pr in hist[-300:]]))
     rows.sort(key=lambda r: r["price"])
     return rows
 

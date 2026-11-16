@@ -26,6 +26,18 @@
   <div class="wrap"><table id="cputbl"></table></div>
   <p class="hint">AWS/GCP/Azure x86 instances from the SkyPilot catalog, cheapest region per instance type, sorted by $ per vCPU-hour. Hetzner/OVH/etc. are not tracked yet.</p>
 </section>
+<section class="card" id="hist">
+  <h2>Price history <small>(one chart per GPU; each line = the cheapest offer of that provider)</small></h2>
+  <div class="ctl">
+    <label>Range <select id="hrange"><option value="21600">Last 6 h</option><option value="86400">Last 24 h</option><option value="604800">Last 7 days</option><option value="0" selected>All</option></select></label>
+    <label>Order by <select id="horder"><option value="move">Most price movement</option><option value="cheap">Cheapest</option><option value="name">GPU name</option></select></label>
+    <label>Show <select id="hn"><option value="6">6 GPUs</option><option value="12">12 GPUs</option><option value="999">All GPUs</option></select></label>
+  </div>
+  <div class="legend" id="hlegend"></div>
+  <div class="grid" id="hgrid"></div>
+  <p class="hint">Follows the table filters below and the “Min VRAM” setting above (set it to 0 to see every card). Prices only get a new point when they change, so flat lines are stable prices. Click a provider chip to hide it; click any table row for that offer's own chart. Each chart has its own price scale.</p>
+</section>
+<div id="tip"></div>
 <div class="bar"><input id="q" placeholder="Search any text…"><button id="reset">Reset filters</button><span id="count"></span></div>
 <div class="wrap"><table id="main"><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
 <p class="hint">Tier: A = mean time between interruptions ≥ 200 h, B ≥ 20 h, C below, “?” = no data (uses the unknown rate above). AWS comes from the Spot Advisor monthly band, Lium from average spot uptime. GCP rows are GPU SKU prices and may exclude the host VM. Price is per GPU; rentals with more GPUs than you use are billed in full.</p>

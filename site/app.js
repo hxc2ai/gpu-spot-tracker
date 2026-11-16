@@ -15,7 +15,7 @@ const COLS = [
   ["effPrice", "Eff. $/GPU-hr", "num", 3], ["perH100", "$ per H100-hour of work", "num", 3], ["jobCost", "Est. job cost $", "num", 0],
   ["history", "History", "spark"],
 ];
-let rows = [], sort = { k: "jobCost", asc: true }, sel = {}, rng = {};
+let rows = [], NOW = 0, hidden = new Set(), openKeys = new Set(), specs = {}, sort = { k: "jobCost", asc: true }, sel = {}, rng = {};
 
 const num = (id) => parseFloat($(id).value) || 0;
 const fmt = (v, d = 3) => (v == null || Number.isNaN(v) || !Number.isFinite(v) ? "–" : Number(v).toFixed(d));
@@ -54,6 +54,7 @@ function passes(r) {
 const tierSpan = (t, note) => `<span class="t t${t === "?" ? "u" : t}" title="${(note || "").replace(/"/g, "'")}">${t}</span>`;
 
 function render() {
+  specs = {};
   rows.forEach(compute);
   const vis = rows.filter(passes);
   vis.sort((a, b) => {
@@ -63,11 +64,98 @@ function render() {
     return (x > y ? 1 : x < y ? -1 : 0) * (sort.asc ? 1 : -1);
   });
   $("#count").textContent = `${vis.length} of ${rows.length} offers`;
-  $("#tbody").innerHTML = vis.slice(0, 1500).map((r) => "<tr>" + COLS.map(([k, , t, d]) =>
+  $("#tbody").innerHTML = vis.slice(0, 1500).map((r) => `<tr data-key="${r.key.replace(/"/g, "&quot;")}" class="${openKeys.has(r.key) ? "open" : ""}">` + COLS.map(([k, , t, d]) =>
     k === "tier" ? `<td>${tierSpan(r.tier, r.note)}</td>` : t === "spark" ? `<td>${spark(r.history)}</td>`
-      : t === "num" ? `<td>${fmt(r[k], d)}${k === "vol7d" && r.vol7d == null ? "new" : ""}</td>` : `<td>${r[k]}</td>`).join("") + "</tr>").join("");
+      : t === "num" ? `<td>${fmt(r[k], d)}${k === "vol7d" && r.vol7d == null ? "new" : ""}</td>` : `<td>${r[k]}</td>`).join("") + "</tr>" + (openKeys.has(r.key) ? detailRow(r) : "")).join("");
   renderPicks(vis);
+  renderHist(vis);
 }
+// ---------- price-history charts ----------
+const PROV = ["gcp", "aws", "azure", "vast", "lium", "nebius", "primeintellect"];
+const pcol = (p) => (PROV.includes(p) ? `var(--s${PROV.indexOf(p) + 1})` : "var(--u)");
+const valueAt = (pts, t) => { let v = null; for (const [pt, pp] of pts) { if (pt <= t) v = pp; else break; } return v; };
+const ago = (s) => (s < 90 ? "now" : s < 5400 ? `${Math.round(s / 60)} min ago` : s < 129600 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`);
+const usd = (v) => "$" + (v < 1 ? v.toFixed(3) : v.toFixed(2));
+// cheapest price over time across several offers (each history = price steps; an offer counts from its first point)
+function mergeMin(hists) {
+  const ts = [...new Set(hists.flatMap((h) => h.map((p) => p[0])))].sort((a, b) => a - b), out = [];
+  for (const t of ts) {
+    const vs = hists.map((h) => valueAt(h, t)).filter((v) => v != null), m = Math.min(...vs);
+    if (!out.length || out[out.length - 1][1] !== m) out.push([t, m]);
+  }
+  return out;
+}
+function chartSvg(id, series, t0, t1, big) {
+  const W = big ? 640 : 300, H = big ? 190 : 105, L = 40, R = 6, T = 6, B = 16;
+  const clip = series.map((s) => {
+    const first = valueAt(s.pts, t0) ?? s.pts[0][1];
+    const inner = s.pts.filter((p) => p[0] > t0 && p[0] <= t1);
+    return { ...s, c: [[Math.max(t0, s.pts[0][0] > t0 ? s.pts[0][0] : t0), first], ...inner] };
+  });
+  const vs = clip.flatMap((s) => s.c.map((p) => p[1]));
+  let lo = Math.min(...vs), hi = Math.max(...vs);
+  if (hi - lo < hi * 0.02) { lo *= 0.95; hi *= 1.05; } else { const pad = (hi - lo) * 0.1; lo -= pad; hi += pad; }
+  const X = (t) => L + ((t - t0) / (t1 - t0 || 1)) * (W - L - R), Y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  specs[id] = { series: clip, t0, t1, X, Y, L, W, R, T, H, B };
+  const grid = [0, 0.5, 1].map((f) => { const v = lo + f * (hi - lo); return `<line class="gl" x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L - 4}" y="${Y(v) + 3}" text-anchor="end">${usd(v)}</text>`; }).join("");
+  const lines = clip.map((s) => {
+    let d = `M${X(s.c[0][0])},${Y(s.c[0][1])}`;
+    for (let i = 1; i < s.c.length; i++) d += `H${X(s.c[i][0])}V${Y(s.c[i][1])}`;
+    d += `H${X(t1)}`;
+    return `<path class="ln" stroke="${s.color}" d="${d}"/>`;
+  }).join("");
+  return `<svg class="ch" data-id="${id}" viewBox="0 0 ${W} ${H}">${grid}<text x="${L}" y="${H - 3}">${ago(NOW - t0)}</text><text x="${W - R}" y="${H - 3}" text-anchor="end">now</text>${lines}<g class="hv" style="display:none"><line class="xh" y1="${T}" y2="${H - B}"/>${clip.map((s) => `<circle r="3.5" fill="${s.color}" stroke="var(--bg)" stroke-width="2" data-n="${s.name}"/>`).join("")}</g></svg>`;
+}
+function renderHist(vis) {
+  const lg = $("#hlegend"), present = PROV.filter((p) => vis.some((r) => r.provider === p));
+  lg.innerHTML = present.map((p) => `<span class="chip ${hidden.has(p) ? "off" : ""}" data-p="${p}" style="--c:${pcol(p)}"><i></i>${p}</span>`).join("");
+  const minv = num("#minvram"), all = vis.filter((r) => r.history?.length && !hidden.has(r.provider) && (r.vram_gb ?? 0) >= minv);
+  const dmin = Math.min(...all.map((r) => r.history[0][0]), NOW), rg = num("#hrange");
+  const t0 = rg ? Math.max(NOW - rg, dmin) : dmin;
+  const byGpu = new Map();
+  for (const r of all) { if (!byGpu.has(r.gpu)) byGpu.set(r.gpu, new Map()); const m = byGpu.get(r.gpu); if (!m.has(r.provider)) m.set(r.provider, []); m.get(r.provider).push(r.history); }
+  const panels = [...byGpu].map(([gpu, m]) => {
+    const series = [...m].map(([prov, hs]) => ({ name: prov, color: pcol(prov), pts: mergeMin(hs) })).sort((a, b) => PROV.indexOf(a.name) - PROV.indexOf(b.name));
+    const move = Math.max(...series.map((s) => { const v = s.pts.filter((p) => p[0] >= t0).map((p) => p[1]).concat(valueAt(s.pts, t0) ?? []); return (Math.max(...v) - Math.min(...v)) / Math.min(...v); }));
+    return { gpu, series, move, cur: Math.min(...series.map((s) => s.pts[s.pts.length - 1][1])) };
+  });
+  const ord = $("#horder").value;
+  panels.sort((a, b) => ord === "name" ? a.gpu.localeCompare(b.gpu) : ord === "cheap" ? a.cur - b.cur : b.move - a.move || a.cur - b.cur);
+  const n = +$("#hn").value;
+  $("#hgrid").innerHTML = panels.slice(0, n).map((p, i) => {
+    const mv = p.move > 0.0005 ? `${p.move >= 0.1 ? Math.round(p.move * 100) : (p.move * 100).toFixed(1)}% swing` : "flat";
+    return `<div class="panel"><h3>${p.gpu} <small>from ${usd(p.cur)} · ${mv}</small></h3>${chartSvg("g" + i, p.series, t0, NOW, false)}</div>`;
+  }).join("") + (panels.length > n ? `<p class="hint">${panels.length - n} more GPUs hidden — change “Show”.</p>` : "") + (panels.length ? "" : "<p class='hint'>No history for the current filters.</p>");
+}
+function detailRow(r) {
+  const h = r.history || [];
+  if (!h.length) return "";
+  const t0 = Math.min(h[0][0], NOW - 3600);
+  return `<tr class="detail"><td colspan="${COLS.length}"><b>${r.provider} ${r.gpu} ×${r.gpu_count} · ${r.region}</b> <small>${h.length} price change${h.length > 1 ? "s" : ""} recorded</small><br>${chartSvg("d" + r.key, [{ name: r.provider, color: pcol(r.provider), pts: h }], t0, NOW, true)}</td></tr>`;
+}
+const tip = () => $("#tip");
+document.addEventListener("mousemove", (e) => {
+  const svg = e.target.closest?.("svg.ch"), t = tip();
+  if (!svg) { t.style.display = "none"; document.querySelectorAll(".hv").forEach((g) => (g.style.display = "none")); return; }
+  const sp = specs[svg.dataset.id]; if (!sp) return;
+  const box = svg.getBoundingClientRect(), x = ((e.clientX - box.left) / box.width) * sp.W;
+  const tm = sp.t0 + Math.min(1, Math.max(0, (x - sp.L) / (sp.W - sp.L - sp.R))) * (sp.t1 - sp.t0);
+  const vals = sp.series.map((s) => ({ s, v: valueAt(s.c, tm) })).filter((o) => o.v != null).sort((a, b) => a.v - b.v);
+  const g = svg.querySelector(".hv"); g.style.display = "";
+  const px = sp.L + ((tm - sp.t0) / (sp.t1 - sp.t0 || 1)) * (sp.W - sp.L - sp.R);
+  g.querySelector("line").setAttribute("x1", px); g.querySelector("line").setAttribute("x2", px);
+  g.querySelectorAll("circle").forEach((c) => { const o = vals.find((o) => o.s.name === c.dataset.n); c.style.display = o ? "" : "none"; if (o) { c.setAttribute("cx", px); c.setAttribute("cy", sp.Y(o.v)); } });
+  t.innerHTML = `<b>${tm >= NOW - 90 ? "now" : new Date(tm * 1000).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</b>` + vals.map((o) => `<div><i style="background:${o.s.color}"></i>${o.s.name} ${usd(o.v)}</div>`).join("");
+  t.style.display = "block";
+  t.style.left = Math.min(e.clientX + 14, innerWidth - t.offsetWidth - 8) + "px"; t.style.top = Math.min(e.clientY + 14, innerHeight - t.offsetHeight - 8) + "px";
+});
+document.addEventListener("click", (e) => {
+  const chip = e.target.closest(".chip");
+  if (chip) { hidden.has(chip.dataset.p) ? hidden.delete(chip.dataset.p) : hidden.add(chip.dataset.p); render(); return; }
+  const tr = e.target.closest("#tbody tr[data-key]");
+  if (tr && !e.target.closest("a")) { const k = tr.dataset.key; openKeys.has(k) ? openKeys.delete(k) : openKeys.add(k); render(); }
+});
+
 function renderPicks(vis) {
   const minv = num("#minvram"), bf = $("#needbf16").checked;
   const ok = vis.filter((r) => r.speed && r.jobCost != null && (r.vram_gb ?? 0) >= minv && (!bf || r.bf16));
@@ -109,12 +197,12 @@ function applyProfile() {
   render();
 }
 fetch(window.DATA_URL).then((r) => r.json()).then((d) => {
-  rows = d.rows;
+  rows = d.rows; NOW = d.meta.generated_at;
   $("#updated").textContent = "Updated " + new Date(d.meta.generated_at * 1000).toLocaleString();
   $("#profile").innerHTML = Object.entries(PROFILES).map(([k, p]) => `<option value="${k}">${p.name}</option>`).join("");
   buildHeader();
   $("#profile").onchange = applyProfile;
-  ["#ngpu", "#job", "#minvram", "#needbf16", "#lost", "#unk", "#q"].forEach((s) => ($(s).oninput = render));
+  ["#hrange", "#horder", "#hn", "#ngpu", "#job", "#minvram", "#needbf16", "#lost", "#unk", "#q"].forEach((s) => ($(s).oninput = render));
   $("#reset").onclick = () => { sel = {}; rng = {}; $("#q").value = ""; buildHeader(); render(); };
   applyProfile();
 }).catch((e) => { $("#updated").textContent = "Failed to load data: " + e; });
