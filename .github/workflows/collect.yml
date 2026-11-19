@@ -33,10 +33,9 @@ jobs:
           service_account: gpu-tracker@project-4b58ed6e-9207-4f1b-a77.iam.gserviceaccount.com
       - run: uv sync --frozen || uv sync
       - run: uv run python -m tracker.run --db data/tracker.db --b2 ${{ inputs.force && '--force' || '' }}
-      - id: t
-        run: echo "hourly=$([ $(date +%-M) -lt 15 ] && echo 1 || echo 0)" >> "$GITHUB_OUTPUT"
-      - name: Build and deploy site (hourly)
-        if: ${{ github.event_name == 'workflow_dispatch' || steps.t.outputs.hourly == '1' }}
+      # Deploy on every run. GitHub throttles scheduled workflows (often 1 run per 6-9 h), so a
+      # "minute < 15" gate skipped the deploy almost every time and the site went stale.
+      - name: Build and deploy site
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_COMPUTE_TRACKER_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
